@@ -1,0 +1,16 @@
+Metadata-Version: 2.2
+Name: edu_pad
+Version: 0.0.1
+Summary: ETL para análisis de datos del dólar
+Author: Andres Callejas
+Author-email: andres.callejas@iudigital.edu.co
+Requires-Dist: pandas
+Requires-Dist: openpyxl
+Requires-Dist: requests
+Requires-Dist: beautifulsoup4
+Requires-Dist: altair>=5.0.0
+Requires-Dist: streamlit>=1.28.0
+Dynamic: author
+Dynamic: author-email
+Dynamic: requires-dist
+Dynamic: summary
