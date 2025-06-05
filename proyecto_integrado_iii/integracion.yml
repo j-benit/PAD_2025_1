@@ -75,8 +75,8 @@ jobs:
           uses: stefanzweifel/git-auto-commit-action@v5
           with:
             commit_message: Entrega de la actividad 1 - Paso 9
-            commit_user_name: Andres Callejas [GitHub Actions]
-            commit_user_email: andres.callejas@iudigital.edu.co
-            commit_author: Andres Callejas <andres.callejas@iudigital.edu.co>
+            commit_user_name: Jhon Benitez [GitHub Actions]
+            commit_user_email: jhon.benitez@est.iudigital.edu.co
+            commit_author: Jhon Benitez <jhon.benitez@est.iudigital.edu.co>
       
       

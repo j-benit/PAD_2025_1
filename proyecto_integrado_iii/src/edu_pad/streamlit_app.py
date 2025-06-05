@@ -2,45 +2,87 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 import os
-#import plotly.express as px
-#import plotly.graph_objects as go
 
 
-
-
-
-class Stramlit_app:
+class StreamlitApp:
     def __init__(self):
-        st.set_page_config(page_title="Dashboard Indicadores Financieros",page_icon="📈",initial_sidebar_state="expanded")
-        st.title("📈 Dashboard Indicadores Financieros")
-        self.ruta_datos="src/edu_pad/static/csv/data_extractor.csv"
+        st.set_page_config(
+            page_title="📊 Dashboard Productos MercadoLibre",
+            page_icon="🛒",
+            layout="wide",
+            initial_sidebar_state="expanded"
+        )
+
+        st.title("🛒 Dashboard de Productos - MercadoLibre")
+        self.ruta_datos = "src/edu_pad/static/csv/data_extractor.csv"
+
+        if not os.path.exists(self.ruta_datos):
+            st.error(f"❌ No se encontró el archivo: {self.ruta_datos}")
+            self.df = pd.DataFrame()
+            return
+
         self.df = pd.read_csv(self.ruta_datos)
-        self.PLOTLY_AVAILABLE = True
+        self._preparar_datos()
 
-    def slider_bar(self):
+    def _preparar_datos(self):
+        self.df['fecha_update'] = pd.to_datetime(self.df['fecha_update'], errors='coerce')
+        self.df['precio'] = pd.to_numeric(self.df['precio'], errors='coerce')
+        self.df.dropna(subset=['fecha_update', 'precio'], inplace=True)
+
+    def sidebar_filtros(self):
         with st.sidebar:
-            st.title('📈  Filtro por año')
-            year_list = list(self.df.year.unique())[::-1]
-            self.selected_year = st.selectbox('Select a year', year_list)
-            st.title('📈  Filtro por indicador')
-            ind_list = list(self.df.indicador.unique())[::-1]
-            self.selected_ind = st.selectbox('Select a year', ind_list)
-            #df_selected_year = self.df[self.df.year == selected_year]
+            st.title("🔍 Filtros")
+
+            categorias = self.df['categoria'].dropna().unique().tolist()
+            self.selected_categoria = st.selectbox("Seleccionar categoría", ["Todas"] + sorted(categorias))
+
+            fechas = self.df['fecha_update'].dt.date.unique()
+            if len(fechas) > 0:
+                self.selected_fecha = st.slider(
+                    "Seleccionar rango de fechas",
+                    min_value=min(fechas),
+                    max_value=max(fechas),
+                    value=(min(fechas), max(fechas))
+                )
+            else:
+                self.selected_fecha = None
+
+    def aplicar_filtros(self):
+        df_filtrado = self.df.copy()
+
+        if self.selected_categoria != "Todas":
+            df_filtrado = df_filtrado[df_filtrado["categoria"] == self.selected_categoria]
+
+        if self.selected_fecha:
+            start, end = self.selected_fecha
+            df_filtrado = df_filtrado[
+                (df_filtrado["fecha_update"].dt.date >= start) &
+                (df_filtrado["fecha_update"].dt.date <= end)
+            ]
+
+        return df_filtrado
+
+    def mostrar_graficos(self, df):
+        if df.empty:
+            st.warning("⚠️ No hay datos para mostrar con los filtros seleccionados.")
+            return
+
+        st.subheader("📈 Evolución de precios")
+        line_chart = alt.Chart(df).mark_line().encode(
+            x="fecha_update:T",
+            y="precio:Q",
+            tooltip=["titulo", "precio", "fecha_update"]
+        ).properties(width=800, height=400)
+
+        st.altair_chart(line_chart, use_container_width=True)
+
+        st.subheader("🏷️ Productos recientes")
+        st.dataframe(df.sort_values("fecha_update", ascending=False)[["titulo", "precio", "fecha_update"]].head(10))
 
 
-    # Heatmap
-    
-#with col[1]:
-    
-    
-    #choropleth = make_choropleth(df_selected_year, 'states_code', 'population', selected_color_theme)
-    #st.plotly_chart(choropleth, use_container_width=True)
-    
-    #heatmap = make_heatmap(df_reshaped, 'year', 'states', 'population')
-    #st.altair_chart(heatmap, use_container_width=True)
-
-
-stramlit_app=Stramlit_app()
-stramlit_app.slider_bar()
-#df_filtrado = stramlit_app.df[stramlit_app.df.year == stramlit_app.selected_year]
-#stramlit_app.make_heatmap(df_filtrado)
+if __name__ == "__main__":
+    app = StreamlitApp()
+    if not app.df.empty:
+        app.sidebar_filtros()
+        datos_filtrados = app.aplicar_filtros()
+        app.mostrar_graficos(datos_filtrados)

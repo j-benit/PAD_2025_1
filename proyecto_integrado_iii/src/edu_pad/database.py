@@ -6,7 +6,7 @@ import os
 
 class DataBase:
     def __init__(self):
-        self.rutadb = "src/edu_pad/static/db/dolar_analisis.db"
+        self.rutadb = "src/edu_pad/static/db/mercado_analisis.db"
 
 
     def guardar_df(self,df=pd.DataFrame()):
@@ -15,7 +15,7 @@ class DataBase:
             conn = sqlite3.connect(self.rutadb)
             df["fecha_create"]= "2025-05-5"
             df["fecha_update"] = "2025-05-5"
-            df.to_sql("dolar_analisis",conn,if_exists='replace',index=False)
+            df.to_sql("mercado_analisis",conn,if_exists='replace',index=False)
             print("*******************************************************************")
             print("Datos guardados")
             print("*******************************************************************")
