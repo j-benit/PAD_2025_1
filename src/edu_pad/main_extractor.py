@@ -1,5 +1,7 @@
 import pandas as pd
 import os
+
+
 from edu_pad.dataweb import scrape_mercadolibre
 import re
 from tabulate import tabulate  # <-- Importar aquí
