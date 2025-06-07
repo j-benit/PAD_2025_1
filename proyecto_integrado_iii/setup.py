@@ -6,13 +6,15 @@ setup(
     author="Jhon Benitez",
     author_email="jhon.benitez@est.iudigital.edu.co",
     description="ETL para análisis de datos de mercado libre",
-    py_modules=["actividad1", "actividad2", "actividad3"],
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     install_requires=[
         "pandas",
         "openpyxl",
         "requests",
         "beautifulsoup4",
         "altair>=5.0.0",
-        "streamlit>=1.28.0"
-    ]
+        "streamlit>=1.28.0", 
+        "tabulate",
+    ],
 )

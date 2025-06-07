@@ -1,5 +1,7 @@
 import pandas as pd
-from dataweb import scrape_mercadolibre
+
+
+from edu_pad.dataweb import scrape_mercadolibre
 import re
 from tabulate import tabulate  # <-- Importar aquí
 
@@ -53,7 +55,10 @@ if __name__ == "__main__":
     print(tabulate(df_limpio, headers='keys', tablefmt='psql', showindex=False))
 
     # Definir ruta donde guardar CSV (cambia según tu proyecto)
-    ruta_guardado = "/workspaces/PAD_2025_1/proyecto_integrado_iii/src/edu_pad/static/csv/productos_mercadolibre_limpio.csv"
+    ruta_guardado = "/workspaces/PAD_2025_1/proyecto_integrado_iii/src/edu_pad/static/csv"
+
+    # Crear directorio padre si no existe
+    os.makedirs(os.path.dirname(ruta_guardado), exist_ok=True)
 
     # Guardamos CSV limpio
     df_limpio.to_csv(ruta_guardado, index=False, encoding='utf-8')
