@@ -21,13 +21,13 @@ jobs:
       - name: Paso 4 - Ejecutar extractor
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}/static/csv":/pad_2025_1_2/static/csv \
-            -v "${{ github.workspace }}/static/db":/pad_2025_1_2/static/db \
+            -v "${{ github.workspace }}/workspaces/PAD_2025_1/src/edu_pad/static/csv \
+            -v "${{ github.workspace }}/workspaces/PAD_2025_1/src/edu_pad/static/db \
             contenedor edu_pad.main_extractor
 
       - name: Paso 5 - Ejecutar ingesta
         run: |
           docker run --rm \
-            -v "${{ github.workspace }}/static/csv":/pad_2025_1_2/static/csv \
-            -v "${{ github.workspace }}/static/db":/pad_2025_1_2/static/db \
+            -v "${{ github.workspace }}/workspaces/PAD_2025_1/src/edu_pad/static/csv\
+            -v "${{ github.workspace }}/workspaces/PAD_2025_1/src/edu_pad/static/db \
             contenedor edu_pad.main_ingesta 
