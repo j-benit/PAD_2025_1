@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import re
 
+
 def scrape_mercadolibre(url):
     print(f"--- Iniciando scraping: {url} ---")
     r = requests.get(url)
