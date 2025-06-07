@@ -1,86 +1,113 @@
-import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime
+import pandas as pd
+import re
 
+def scrape_mercadolibre(url):
+    print(f"--- Iniciando scraping: {url} ---")
+    r = requests.get(url)
+    soup = BeautifulSoup(r.text, "html.parser")
+    productos = soup.find_all("div", class_="poly-card__content")
+    print(f"Productos encontrados: {len(productos)}")
 
-class DataWeb:
-    def __init__(self):
-        self.base_url = "https://listado.mercadolibre.com.co/"
-        self.headers = {'User-Agent': 'Mozilla/5.0'}
+    data = []
 
-    def obtener_datos(self, producto="laptop"):
-        """
-        Obtiene una lista de productos de Mercado Libre Colombia para el término dado
-
-        Parámetros:
-        producto (str): Nombre del producto a buscar (ej. "laptop", "celular")
-
-        Retorna:
-        pd.DataFrame: DataFrame con columnas: titulo, precio, url, fecha_scraping
-        """
-        url = f"{self.base_url}{producto.replace(' ', '-')}"
+    for prod in productos:
         try:
-            respuesta = requests.get(url, headers=self.headers)
-            if respuesta.status_code != 200:
-                print(f"Error al acceder a la URL: {url}")
-                return pd.DataFrame()
-
-            soup = BeautifulSoup(respuesta.text, 'html.parser')
-            items = soup.select("li.ui-search-layout__item")
-
-            productos = []
-            for item in items:
-                titulo = item.select_one("h2.ui-search-item__title")
-                precio = item.select_one("span.price-tag-fraction")
-                enlace = item.select_one("a.ui-search-link")
-
-                if titulo and precio and enlace:
-                    productos.append({
-                        "titulo": titulo.text.strip(),
-                        "precio": self._limpiar_precio(precio.text),
-                        "url": enlace.get("href"),
-                        "fecha_scraping": datetime.today().strftime("%Y-%m-%d"),
-                        "producto_consultado": producto
-                    })
-
-            df = pd.DataFrame(productos)
-            print(f"{len(df)} productos obtenidos para '{producto}'.")
-            return df
-
-        except Exception as e:
-            print(f"Error al obtener datos del producto '{producto}': {e}")
-            return pd.DataFrame()
-
-    def _limpiar_precio(self, texto_precio):
-        """
-        Limpia el texto del precio, eliminando puntos y convirtiéndolo a float
-        """
-        try:
-            texto_limpio = texto_precio.replace(".", "").replace(",", ".")
-            return float(texto_limpio)
+            marca = prod.find("span", class_="poly-component__brand").get_text(strip=True)
         except:
+            marca = None
+
+        try:
+            titulo_tag = prod.find("a", class_="poly-component__title")
+            titulo = titulo_tag.get_text(strip=True) if titulo_tag else None
+            link = titulo_tag["href"] if titulo_tag and "href" in titulo_tag.attrs else None
+        except:
+            titulo, link = None, None
+
+        def get_text_or_none(selector):
+            try:
+                return selector.get_text(strip=True) if selector else None
+            except:
+                return None
+
+        precio_anterior = None
+        precio_anterior_tags = prod.find_all("s", class_="andes-money-amount--previous")
+        if precio_anterior_tags:
+            # Ejemplo de obtener texto del primer span dentro del primero tag
+            span_tag = precio_anterior_tags[0].find("span", class_="andes-money-amount__fraction")
+            precio_anterior = get_text_or_none(span_tag)
+
+        precio_actual_tag = prod.find("div", class_="poly-price__current")
+        precio_actual = None
+        if precio_actual_tag:
+            span_tag = precio_actual_tag.find("span", class_="andes-money-amount__fraction")
+            precio_actual = get_text_or_none(span_tag)
+
+        descuento = get_text_or_none(prod.find("span", class_="andes-money-amount__discount"))
+        cuotas = get_text_or_none(prod.find("span", class_="poly-price__installments"))
+        calificacion = get_text_or_none(prod.find("span", class_="poly-reviews__rating"))
+        total_resenas = get_text_or_none(prod.find("span", class_="poly-reviews__total"))
+
+        promocionado = "Sí" if prod.find("a", class_="poly-component__ads-promotions") else "No"
+
+        data.append({
+            "Marca": marca,
+            "Título": titulo,
+            "Precio Anterior": precio_anterior,
+            "Precio Actual": precio_actual,
+            "Descuento": descuento,
+            "Cuotas": cuotas,
+            "Calificación": calificacion,
+            "Reseñas": total_resenas,
+            "URL": link,
+            "Promocionado": promocionado
+        })
+
+    return data
+
+
+def clean_and_transform_dataframe(df):
+    if df.empty:
+        return df
+
+    def clean_price(price_str):
+        if pd.isna(price_str) or price_str is None:
+            return None
+        cleaned = str(price_str).replace('$', '').replace('.', '').replace(',', '').strip()
+        try:
+            return float(cleaned)
+        except ValueError:
             return None
 
-    def obtener_multiples_productos(self, productos=["laptop", "celular"]):
-        """
-        Procesa varios productos y concatena sus DataFrames
+    def clean_discount(discount_str):
+        if pd.isna(discount_str) or discount_str is None:
+            return None
+        cleaned = str(discount_str).replace('% OFF', '').replace('%', '').strip()
+        try:
+            return float(cleaned)
+        except ValueError:
+            return None
 
-        Retorna:
-        pd.DataFrame: DataFrame combinado con resultados de todos los productos
-        """
-        df_total = pd.DataFrame()
-        for prod in productos:
-            df = self.obtener_datos(prod)
-            if not df.empty:
-                df_total = pd.concat([df_total, df], ignore_index=True)
-        return df_total
+    def clean_numeric_field(field_str):
+        if pd.isna(field_str) or field_str is None:
+            return None
+        cleaned = str(field_str).replace('(', '').replace(')', '').strip()
+        cleaned = re.sub(r'[^\d.]', '', cleaned)
 
+        if not cleaned:
+            return None
+        try:
+            return float(cleaned)
+        except ValueError:
+            return None
 
-# # Ejemplo de uso
-# if __name__ == "__main__":
-#     dw = DataWeb()
-#     df_laptops = dw.obtener_datos("laptop")
-#     print(df_laptops.head())
-#     df_varios = dw.obtener_multiples_productos(["laptop", "monitor"])
-#     print(df_varios.head())
+    df['Precio Anterior'] = df['Precio Anterior'].apply(clean_price)
+    df['Precio Actual'] = df['Precio Actual'].apply(clean_price)
+    df['Descuento'] = df['Descuento'].apply(clean_discount)
+    df['Calificación'] = df['Calificación'].apply(clean_numeric_field)
+    df['Reseñas'] = df['Reseñas'].apply(clean_numeric_field)
+    df['Reseñas'] = df['Reseñas'].astype('Int64', errors='ignore')
+
+    df = df.replace({None: pd.NA})
+    return df

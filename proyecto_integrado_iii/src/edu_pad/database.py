@@ -1,38 +1,25 @@
 import pandas as pd
-import sqlite3
-import os
-
-# 1 sobre escribir , 2 actualizar 3 insertar al final
 
 class DataBase:
-    def __init__(self):
-        self.rutadb = "src/edu_pad/static/db/mercado_analisis.db"
+    def __init__(self, filename, expected_columns=None):
+        self.filename = filename
+        self.expected_columns = expected_columns or []
 
-
-    def guardar_df(self,df=pd.DataFrame()):
-        df = df.copy()
+    def guardar_df(self, df):
         try:
-            conn = sqlite3.connect(self.rutadb)
-            df["fecha_create"]= "2025-05-5"
-            df["fecha_update"] = "2025-05-5"
-            df.to_sql("mercado_analisis",conn,if_exists='replace',index=False)
-            print("*******************************************************************")
-            print("Datos guardados")
-            print("*******************************************************************")
-            print("Se guardo el df en base de datos cantidad de registros {str(df.shape)}")
-        except Exception as errores:
-            print("Error al guardar el df en base de datos {}".format(df.shape))
+            df.to_csv(self.filename, index=False, encoding="utf-8")
+            print(f"✅ CSV guardado exitosamente en '{self.filename}'.")
+        except Exception as e:
+            print(f"❌ Error al guardar CSV: {e}")
 
-    def obtener_datos(self,nombre_tabla="dolar_analisis"):
+    def cargar_df(self):
         try:
-            conn = sqlite3.connect(self.rutadb)
-            consulta = "select * from {}".format(nombre_tabla)
-            df = pd.read_sql_query(consulta,conn)
-            print("*******************************************************************")
-            print("Se obtuvieron los datos de la base datos")
-            print("*******************************************************************")
-            print("Dase de datos cantidad de registros {}".format(df.shape))
+            df = pd.read_csv(self.filename)
+            print(f"✅ Archivo '{self.filename}' cargado exitosamente.")
             return df
-        except Exception as errores:
-            return df
-            print("Error al obtener los datos de la tabla {str(nombre_tabla)} en base de datos {str(errores)}")
+        except FileNotFoundError:
+            print(f"❌ Archivo '{self.filename}' no encontrado. Creando DataFrame vacío.")
+            return pd.DataFrame(columns=self.expected_columns)
+        except Exception as e:
+            print(f"❌ Error al cargar CSV: {e}")
+            return pd.DataFrame(columns=self.expected_columns)

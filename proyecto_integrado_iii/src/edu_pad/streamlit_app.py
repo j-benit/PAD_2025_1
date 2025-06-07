@@ -3,9 +3,8 @@ import pandas as pd
 import altair as alt
 import os
 
-
 class StreamlitApp:
-    def __init__(self):
+    def __init__(self, ruta_datos="/workspaces/PAD_2025_1/proyecto_integrado_iii/src/edu_pad/static/csv/productos_mercadolibre_limpio.csv"):
         st.set_page_config(
             page_title="📊 Dashboard Productos MercadoLibre",
             page_icon="🛒",
@@ -14,7 +13,7 @@ class StreamlitApp:
         )
 
         st.title("🛒 Dashboard de Productos - MercadoLibre")
-        self.ruta_datos = "src/edu_pad/static/csv/data_extractor.csv"
+        self.ruta_datos = ruta_datos
 
         if not os.path.exists(self.ruta_datos):
             st.error(f"❌ No se encontró el archivo: {self.ruta_datos}")
@@ -25,6 +24,7 @@ class StreamlitApp:
         self._preparar_datos()
 
     def _preparar_datos(self):
+        # Asegura que las columnas de fecha y precio estén limpias y en el formato correcto
         self.df['fecha_update'] = pd.to_datetime(self.df['fecha_update'], errors='coerce')
         self.df['precio'] = pd.to_numeric(self.df['precio'], errors='coerce')
         self.df.dropna(subset=['fecha_update', 'precio'], inplace=True)
@@ -33,10 +33,10 @@ class StreamlitApp:
         with st.sidebar:
             st.title("🔍 Filtros")
 
-            categorias = self.df['categoria'].dropna().unique().tolist()
+            categorias = self.df['categoria'].dropna().unique().tolist() if 'categoria' in self.df.columns else []
             self.selected_categoria = st.selectbox("Seleccionar categoría", ["Todas"] + sorted(categorias))
 
-            fechas = self.df['fecha_update'].dt.date.unique()
+            fechas = self.df['fecha_update'].dt.date.unique() if 'fecha_update' in self.df.columns else []
             if len(fechas) > 0:
                 self.selected_fecha = st.slider(
                     "Seleccionar rango de fechas",
@@ -50,10 +50,10 @@ class StreamlitApp:
     def aplicar_filtros(self):
         df_filtrado = self.df.copy()
 
-        if self.selected_categoria != "Todas":
+        if hasattr(self, 'selected_categoria') and self.selected_categoria != "Todas":
             df_filtrado = df_filtrado[df_filtrado["categoria"] == self.selected_categoria]
 
-        if self.selected_fecha:
+        if hasattr(self, 'selected_fecha') and self.selected_fecha:
             start, end = self.selected_fecha
             df_filtrado = df_filtrado[
                 (df_filtrado["fecha_update"].dt.date >= start) &
