@@ -58,7 +58,7 @@ SMTP_PORT: Puerto SMTP (por defecto: 587)
 ## Estructura del Proyecto
 
 ```
-proyecto/
+proyecto/proyecto_integradi_iii/
 ├── .github/
 │   └── workflows/
 │       ├── 0-Setup-Environment.yml
