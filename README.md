@@ -1,92 +1,64 @@
-# Workflow de ETL para Datos del Dólar con GitHub Actions
+# Workflow de Extracción e Ingesta de Datos de Laptops desde Mercado Libre con Docker y GitHub Actions
 
-Este proyecto implementa un flujo completo de ETL (Extracción, Transformación y Carga) para datos del dólar usando GitHub Actions como orquestador de CI/CD.
+Este proyecto implementa un flujo automatizado para la extracción e ingesta de datos de productos (laptops) disponibles en Mercado Libre Colombia. Se utilizan herramientas como Docker y GitHub Actions para orquestar un proceso reproducible de integración y entrega continua (CI/CD).
 
 ## Estructura del Flujo de Trabajo
 
-El proceso está dividido en cuatro workflows de GitHub Actions:
+El flujo automatizado se realiza mediante un único workflow de GitHub Actions (`accionables.yml`) con los siguientes pasos:
 
-1. **Setup Environment** (`0-Setup-Environment.yml`)
-   - Prepara el entorno y la estructura del proyecto
-   - Instala dependencias usando `setup.py`
-   - Se ejecuta al hacer push al branch principal o manualmente
+1. **Checkout del Repositorio**
+   - Clona el repositorio al runner de GitHub Actions.
 
-2. **Data Extraction** (`1-Data-Extraction.yml`)
-   - Extrae datos del dólar desde Yahoo Finance
-   - Guarda los datos en un archivo CSV
-   - Se ejecuta cada 12 horas o manualmente
-   - Si la extracción falla, detiene el pipeline
+2. **Autenticación en Docker Hub**
+   - Se realiza login utilizando secretos `DOCKER_USERNAME` y `DOCKER_TOKEN`.
 
-3. **Data Ingestion** (`2-Data-Ingestion.yml`)
-   - Carga los datos del CSV en una base de datos SQLite
-   - Elimina el CSV temporal después de la ingesta
-   - Se ejecuta automáticamente después de una extracción exitosa
+3. **Construcción de Imagen Docker**
+   - Se crea una imagen con todas las dependencias necesarias para ejecutar los scripts de scraping e ingesta.
 
-4. **Data Monitoring** (`3-Data-Monitoring.yml`)
-   - Monitorea la base de datos SQLite verificando integridad y tendencias
-   - Genera logs y envía alertas si es necesario
-   - Se ejecuta después de una ingesta exitosa, cada 6 horas o manualmente
+4. **Ejecución de la Extracción**
+   - Se corre el script `main_extractor.py` dentro del contenedor para extraer información estructurada de laptops publicadas en Mercado Libre.
 
-## Requisitos para la Configuración
-
-Para que este workflow funcione correctamente, necesitas configurar los siguientes secretos en GitHub:
-
-1. Para el envío de alertas por correo electrónico:
-   - `EMAIL_SENDER`: Dirección de correo del remitente
-   - `EMAIL_RECEIVER`: Dirección de correo del destinatario
-   - `EMAIL_PASSWORD`: Contraseña o token de la cuenta del remitente
-   - `SMTP_SERVER`: Servidor SMTP (valor predeterminado: smtp.gmail.com)
-   - `SMTP_PORT`: Puerto SMTP (valor predeterminado: 587)
+5. **Ejecución de la Ingesta**
+   - Se ejecuta `main_ingesta.py` para almacenar los datos extraídos en un archivo o base de datos.
 
 ## Estructura del Proyecto
 
-```
 proyecto/
 ├── .github/
-│   └── workflows/
-│       ├── 0-Setup-Environment.yml
-│       ├── 1-Data-Extraction.yml
-│       ├── 2-Data-Ingestion.yml
-│       └── 3-Data-Monitoring.yml
+│ └── workflows/
+│ └── docker.yml
 ├── src/
-│   └── edu_pad/
-│       ├── database.py
-│       ├── dataweb.py
-│       ├── main_extractor.py
-│       ├── main_ingesta.py
-│       ├── monitor.py
-│       └── static/
-│           ├── csv/
-│           ├── db/
-│           └── logs/
-├── setup.py
+│ └── edu_pad/
+│ ├── database.py
+│ ├── dataweb.py
+│ ├── main_extractor.py
+│ ├── main_ingesta.py
+│ └── static/
+│ ├── csv/
+│ └── db/
+├── Dockerfile
+├── requirements.txt
 └── README.md
-```
 
-## Instalación
 
-1. Clona este repositorio
-2. Configura los secretos en GitHub
-3. Los workflows se ejecutarán automáticamente según lo programado o puedes iniciarlos manualmente
+## Requisitos de Configuración
+
+Para la correcta ejecución del pipeline, deben definirse los siguientes secretos en GitHub:
+
+- `DOCKER_USERNAME`: Usuario de Docker Hub.
+- `DOCKER_TOKEN`: Token de acceso a Docker Hub.
 
 ## Características Principales
 
-- **Modular**: Cada fase del ETL está en su propio archivo YAML
-- **Condicional**: Los jobs dependen del éxito de los anteriores
-- **Monitoreo automatizado**: Análisis de tendencias y detección de anomalías
-- **Alertas**: Notificaciones por correo cuando hay problemas o cambios importantes
-- **Persistencia de artefactos**: Los datos y logs se conservan entre ejecuciones
-- **Instalación simplificada**: Utiliza setup.py para gestionar dependencias
+- **Automatización CI/CD**: El flujo se ejecuta automáticamente al hacer `push` a la rama principal.
+- **Reproducibilidad**: Uso de Docker para estandarizar el entorno de ejecución.
+- **Extracción web dinámica**: Uso de Selenium para manejar el contenido cargado dinámicamente desde Mercado Libre.
+- **Persistencia**: Los datos se almacenan en carpetas compartidas (volúmenes) entre host y contenedor.
 
-## Personalización
+## Cómo Ejecutar Localmente
 
-Para adaptar este workflow a tus necesidades:
+1. **Construir imagen Docker:**
 
-1. Modifica `dataweb.py` para extraer datos de otras fuentes
-2. Ajusta la frecuencia de ejecución modificando las expresiones cron en los archivos YAML
-3. Añade más análisis o transformaciones en la clase `DatabaseMonitor`
-4. Actualiza `setup.py` si necesitas instalar paquetes adicionales
+```bash
+docker build -t contenedor .
 
----
-
-Creado para la formacion de analitica de datos utilizando GitHub Actions y Python
